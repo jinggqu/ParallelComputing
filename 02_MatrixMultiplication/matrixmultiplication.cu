@@ -6,15 +6,20 @@
 #include <cuda_runtime.h>
 #include "device_launch_parameters.h"
 
-#define N 10
+#define N 10 
 #define GRID_SIZE 32
 #define BLOCK_SIZE 16
 
-__global__ void matrixAddition(float *a, float *b, float *c) {
-    int bx = blockIdx.x;
+__global__ void matrixMultiplication(float *a, float *b, float *c, int width) {
     int tx = threadIdx.x;
-    int i = bx * BLOCK_SIZE + tx;
-    c[i] = a[i] + b[i];
+    int ty = threadIdx.y;
+    float pvalue = 0;
+    for (int k = 0; k < width; ++k) {
+        float melement = a[ty * width + k];
+        float nelement = b[k * width + tx];
+        pvalue += melement * nelement;
+    }
+    c[ty * width + tx] = pvalue;
 }
 
 
@@ -23,7 +28,7 @@ void randomInit(float* data, unsigned int size) {
     srand(1);
     for (unsigned int i = 0; i < size; i++) {
         data[i] = rand() / (float) 100000000;
-    }    
+    }
 }
 
 
@@ -55,7 +60,7 @@ int main(void) {
     dim3 dimBlock(BLOCK_SIZE, BLOCK_SIZE);
 
     // 执行 GPU 内核函数
-    matrixAddition <<< dimGrid, dimBlock >>> (aD, bD, cD);
+    matrixMultiplication <<< dimGrid, dimBlock >>> (aD, bD, cD, N);
 
     // 从 GPU 设备复制结果向量 C 到主机内存的 C
     cudaMemcpy(cH, cD, mem_size, cudaMemcpyDeviceToHost);
