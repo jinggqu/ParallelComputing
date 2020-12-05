@@ -9,6 +9,7 @@
 __global__ void calcSum(float *d_arr, float *maxArray) {
     unsigned int t = threadIdx.x;
     unsigned int bid = blockIdx.x;
+    
     maxArray[t] = d_arr[t + bid * N];
     for (unsigned int stride = blockDim.x / 2; stride > 0;  stride >>= 1) {
         __syncthreads();
