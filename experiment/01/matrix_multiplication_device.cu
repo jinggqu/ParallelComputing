@@ -3,9 +3,7 @@
 #include <cuda_runtime.h>
 #include "device_launch_parameters.h"
 
-#define SIZE 1024 
-#define GRID_SIZE 4
-#define BLOCK_SIZE 4
+#define N 1024
 
 __global__ void matrixMultiplication(float *matrixM, float *matrixN, float *matrixP, int width) {
     int tx = threadIdx.x;
@@ -19,11 +17,10 @@ __global__ void matrixMultiplication(float *matrixM, float *matrixN, float *matr
     matrixP[ty * width + tx] = sum;
 }
 
-
-// 主机端主函数
 int main(void) {
     float *h_matrixM, *h_matrixN, *h_matrixP, *d_matrixM, *d_matrixN, *d_matrixP;
-    int mem_size = SIZE * SIZE * sizeof(float);
+    int total = N * N;
+    int mem_size = total * sizeof(float);
 
     h_matrixM = (float *) malloc(mem_size);
     h_matrixN = (float *) malloc(mem_size);
@@ -32,7 +29,7 @@ int main(void) {
     cudaMalloc((void **) &d_matrixN, mem_size);
     cudaMalloc((void **) &d_matrixP, mem_size);
 
-    for (int i = 0; i < SIZE * SIZE; ++i) {
+    for (int i = 0; i < total; ++i) {
         h_matrixM[i] = 3;
         h_matrixN[i] = 2;
     }
@@ -40,9 +37,9 @@ int main(void) {
     cudaMemcpy(d_matrixM, h_matrixM, mem_size, cudaMemcpyHostToDevice);
     cudaMemcpy(d_matrixN, h_matrixN, mem_size, cudaMemcpyHostToDevice);
 
-    dim3 dimGrid(GRID_SIZE, GRID_SIZE);
-    dim3 dimBlock(BLOCK_SIZE, BLOCK_SIZE);
-
+    dim3 threadsPerBlock(512);
+    dim3 blocksPerGrid(16);
+    
     // 记录程序开始运行的时间
     float time;
     cudaEvent_t start, stop;
@@ -50,15 +47,14 @@ int main(void) {
     cudaEventCreate(&stop);
     cudaEventRecord(start, 0);
 
-    // 执行 GPU 内核函数
-    matrixMultiplication <<< dimGrid, dimBlock >>> (d_matrixM, d_matrixN, d_matrixP, SIZE);
-    cudaDeviceSynchronize();
+    matrixMultiplication <<< blocksPerGrid, threadsPerBlock >>> (d_matrixM, d_matrixN, d_matrixP, N);
 
+    cudaDeviceSynchronize();
     cudaEventRecord(stop, 0);
     cudaEventSynchronize(start);
     cudaEventSynchronize(stop);
     cudaEventElapsedTime(&time, start, stop);
-    printf("Time elapsed: %.2f ms\n", time);
+    printf("Time elapsed: %.6f ms\n", time);
     cudaEventDestroy(start);
     cudaEventDestroy(stop);
 
