@@ -39,7 +39,7 @@ int main() {
     cudaMemcpy(d_maxArray, h_maxArray, N * sizeof(float), cudaMemcpyHostToDevice);
 
     dim3 threadsPerBlock(N);
-    dim3 blocksPerGrid(16);
+    dim3 blocksPerGrid(N);
 
     // 记录程序开始运行的时间
     float time;

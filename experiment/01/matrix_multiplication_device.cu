@@ -5,16 +5,16 @@
 
 #define N 1024
 
-__global__ void matrixMultiplication(float *matrixM, float *matrixN, float *matrixP, int width) {
+__global__ void matrixMultiplication(float *matrixM, float *matrixN, float *matrixP) {
+    int bx = blockIdx.x; 
     int tx = threadIdx.x;
-    int ty = threadIdx.y;
     float sum = 0, m, n;
-    for (int k = 0; k < width; ++k) {
-        m = matrixM[ty * width + k];
-        n = matrixN[k * width + tx];
+    for (int k = 0; k < N; ++k) {
+        m = matrixM[bx * N + k];
+        n = matrixN[k * N + tx];
         sum += m * n;
     }
-    matrixP[ty * width + tx] = sum;
+    matrixP[bx * N + tx] = sum;
 }
 
 int main(void) {
@@ -37,8 +37,8 @@ int main(void) {
     cudaMemcpy(d_matrixM, h_matrixM, mem_size, cudaMemcpyHostToDevice);
     cudaMemcpy(d_matrixN, h_matrixN, mem_size, cudaMemcpyHostToDevice);
 
-    dim3 threadsPerBlock(512);
-    dim3 blocksPerGrid(16);
+    dim3 threadsPerBlock(1024);
+    dim3 blocksPerGrid(1024);
     
     // 记录程序开始运行的时间
     float time;
@@ -47,7 +47,7 @@ int main(void) {
     cudaEventCreate(&stop);
     cudaEventRecord(start, 0);
 
-    matrixMultiplication <<< blocksPerGrid, threadsPerBlock >>> (d_matrixM, d_matrixN, d_matrixP, N);
+    matrixMultiplication <<< blocksPerGrid, threadsPerBlock >>> (d_matrixM, d_matrixN, d_matrixP);
 
     cudaDeviceSynchronize();
     cudaEventRecord(stop, 0);
@@ -61,9 +61,9 @@ int main(void) {
     cudaMemcpy(h_matrixP, d_matrixP, mem_size, cudaMemcpyDeviceToHost);
 
     // 输出结果
-    // for (int i = 0; i < SIZE * SIZE; ++i) {
-    //     printf("%.2f\n", h_matrixP[0]);
-    // }
+    //for (int i = 0; i < N * N; ++i) {
+    //    printf("h_matrixP[%d] = %.6f\n", i, h_matrixP[i]);
+    //}
 
     free(h_matrixM);
     free(h_matrixN);
