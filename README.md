@@ -2,7 +2,7 @@
 
 1. [矩阵加法](https://github.com/sudrizzz/ParallelComputing/blob/main/classwork/01/matrix_addition.cu)
 2. [矩阵乘法](https://github.com/sudrizzz/ParallelComputing/blob/main/classwork/02/matrix_multiplication.cu)
-3. [获取矩阵每行最大值](https://github.com/sudrizzz/ParallelComputing/blob/main/classwork/03/max_number_of_rows.cu)
+3. 获取矩阵每行最大值
 
 # 实验一
 
