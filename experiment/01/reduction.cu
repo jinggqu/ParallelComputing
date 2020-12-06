@@ -11,9 +11,9 @@ __global__ void getMaxValueOfRow(float *d_arr, float *maxArray) {
     unsigned int bid = blockIdx.x;
     
     maxArray[t] = d_arr[t + bid * N];
-    for (unsigned int stride = blockDim.x / 2; stride > 0;  stride >>= 1) {
+    for (unsigned int stride = 1; stride < blockDim.x;  stride *= 2) {
         __syncthreads();
-        if (t < stride)
+        if (t % (2 * stride) == 0)
             maxArray[t] = maxArray[t + stride] > maxArray[t] ? maxArray[t + stride] : maxArray[t];
     }
 }
