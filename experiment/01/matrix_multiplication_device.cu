@@ -60,10 +60,13 @@ int main(void) {
 
     cudaMemcpy(h_matrixP, d_matrixP, mem_size, cudaMemcpyDeviceToHost);
 
-    // 输出结果
-    //for (int i = 0; i < N * N; ++i) {
-    //    printf("h_matrixP[%d] = %.6f\n", i, h_matrixP[i]);
-    //}
+    int count = 0;
+    // 验证结果
+    for (int i = 0; i < N * N; ++i) {
+        if (h_matrixP[i] == 6144)
+            count++;
+    }
+    printf("count = %d\n", count);
 
     free(h_matrixM);
     free(h_matrixN);

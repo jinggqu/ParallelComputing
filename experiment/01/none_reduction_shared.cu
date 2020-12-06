@@ -5,9 +5,8 @@
 #include <stdlib.h>
 
 #define N 512
-#define TILE_WIDTH 4
 
-__global__ void calcSum(float *d_arr, float *maxArray) {
+__global__ void getMaxValueOfRow(float *d_arr, float *maxArray) {
     unsigned int t = threadIdx.x;
     unsigned int bid = blockIdx.x;
     __shared__ float ds_arr[N];
@@ -51,7 +50,7 @@ int main() {
     cudaEventCreate(&stop);
     cudaEventRecord(start, 0);
     
-    calcSum <<< blocksPerGrid, threadsPerBlock >>> (d_arr, d_maxArray);
+    getMaxValueOfRow <<< blocksPerGrid, threadsPerBlock >>> (d_arr, d_maxArray);
 
     cudaDeviceSynchronize();
     cudaEventRecord(stop, 0);
@@ -64,9 +63,17 @@ int main() {
 
     cudaMemcpy(h_maxArray, d_maxArray, N * sizeof(float), cudaMemcpyDeviceToHost);
 
-    for (int i = 0; i < N; ++i) {
-        printf("The max number of row %d :%.f\n", i,  h_maxArray[i]);
+    // for (int i = 0; i < N; ++i) {
+    //     printf("The max number of row %d :%.f\n", i,  h_maxArray[i]);
+    // }
+
+    // 验证结果
+    int count = 0;
+    for (int i = 0; i < N * N; ++i) {
+        if (h_maxArray[i] == 3)
+            count++;
     }
+    printf("count = %d\n", count);
     
     cudaFree(d_arr);
     cudaFree(d_maxArray);
