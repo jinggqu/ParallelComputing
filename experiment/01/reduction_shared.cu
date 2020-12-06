@@ -17,7 +17,7 @@ __global__ void getMaxValueOfRow(float *d_arr, float *maxArray) {
         if (t % (2 * stride) == 0)
             ds_arr[t] = ds_arr[t + stride] > ds_arr[t] ? ds_arr[t + stride] : ds_arr[t];
     }
-    maxArray[t] = ds_arr[t];
+    maxArray[bid % N] = ds_arr[t];
 }
 
 int main() {
@@ -81,4 +81,3 @@ int main() {
     free(h_maxArray);
     return 0;
 }
-
