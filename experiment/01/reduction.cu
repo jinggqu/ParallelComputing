@@ -66,7 +66,6 @@ int main() {
     //     printf("The max number of row %d :%.f\n", i,  h_maxArray[i]);
     // }
 
-    
     // 验证结果
     int count = 0;
     for (int i = 0; i < N * N; ++i) {
@@ -81,4 +80,3 @@ int main() {
     free(h_maxArray);
     return 0;
 }
-
