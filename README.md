@@ -1,3 +1,5 @@
+![](https://visitor-badge.glitch.me/badge?page_id=sudrizzz.ParallelComputing)
+
 # 课堂作业
 
 1. [矩阵加法](https://github.com/sudrizzz/ParallelComputing/blob/main/classwork/01/matrix_addition.cu)
