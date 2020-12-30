@@ -1,6 +1,5 @@
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
-#include "cublas_v2.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -80,7 +79,7 @@ void get_max_min(float *vector, float *matrix, float min, float max) {
     float r_mod = sqrtf(r_square_sum);
     for (int i = 0; i < N; i++) {
         for (int j = 0; j < N; j++) {
-            matrix[i * N + j] = (vector[i] * vector[j]) * 1.0 / r_mod;
+            matrix[i * N + j] = (vector[i] * vector[j]) / r_mod;
             if (i == 0 && j == 0) {
                 max = matrix[0];
                 min = matrix[0];
@@ -90,27 +89,36 @@ void get_max_min(float *vector, float *matrix, float min, float max) {
             }
         }
     }
-    printf("cpu => min = %.2f, max = %.2f\n", min, max);
+    printf("CPU => min = %.6f, max = %.6f\n", min, max);
 }
 
+
+void init_Data(char* file_path, float* vector) {
+    FILE* file;
+    file = fopen(file_path, "r");
+    for (int i = 0; !feof(file); i++)
+        fscanf(file, "%f", &vector[i]);
+    fclose(file);
+}
 
 int main()
 {
     float* host_vector, * host_matrix, *host_min_array, * host_max_array;
-    float vector_squared_sum = 0, vector_mod = 0;
+    float vector_squared_sum = 0, vector_mod = 0, host_min = 0, host_max = 0;
 
     host_vector = (float*)malloc(sizeof(float) * N);
     host_matrix = (float*)malloc(sizeof(float) * N * N);
     host_min_array = (float*)malloc(sizeof(float) * N);
     host_max_array = (float*)malloc(sizeof(float) * N);
     
-    for (int i = 0; i < N; i++) {
-        //host_vector[i] = rand();
-        host_vector[i] = 2;
-    }
+
+    // 读取数据
+    init_Data("./testdata6.txt", host_vector);
+    
 
     // CPU 函数
-    // get_max_min(host_vector, host_matrix, host_min, host_max);
+    get_max_min(host_vector, host_matrix, host_min, host_max);
+
 
     // GPU 函数
     // 初始化变量
@@ -164,19 +172,18 @@ int main()
     
 
     // 对一维数组使用无分支发散的并行规约，求其最大最小值
-    float host_min = 0, host_max = 0, *device_min, *device_max;
+    float *device_min, *device_max;
     cudaMalloc((void**)&device_min, sizeof(float));
     cudaMalloc((void**)&device_max, sizeof(float));
     
     get_max_value_of_row <<< blocksPerGrid, threadsPerBlock >>> (device_max_array, device_max);
     cudaMemcpy(&host_max, device_max, sizeof(float), cudaMemcpyDeviceToHost);
-    get_min_value_of_row <<< blocksPerGrid, threadsPerBlock >>> (device_max_array, device_min);
+    get_min_value_of_row <<< blocksPerGrid, threadsPerBlock >>> (device_min_array, device_min);
     cudaMemcpy(&host_min, device_min, sizeof(float), cudaMemcpyDeviceToHost);
     
 
     // 输出结果
-    printf("max(A) = %.6f\n", host_max);
-    printf("min(A) = %.6f\n", host_min);
+    printf("GPU => min = %.6f, max = %.6f\n", host_min, host_max);
 
     return 0;
 }
