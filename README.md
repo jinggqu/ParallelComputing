@@ -42,5 +42,26 @@
 3. [共享内存分支发散](https://github.com/sudrizzz/ParallelComputing/blob/main/experiment/01/reduction_shared.cu)
 4. [共享内存无分支发散](https://github.com/sudrizzz/ParallelComputing/blob/main/experiment/01/none_reduction_shared.cu)
 
+# 实验二
+
+随机生成 8192 个随机整数，称为 R[8192]，作为列向量。R 与 R 转置的乘积除以 R 的模，然后得到矩阵 A，求出 A 所有元素的最大最小值，记为 max 与 min。
+
+## 代码实现
+
+[测试数据](https://github.com/sudrizzz/ParallelComputing/blob/main/experiment/02/testdata6.txt)
+[代码实现](https://github.com/sudrizzz/ParallelComputing/blob/main/experiment/02/max_min_value_of_matrix.cu)
+
+## 实验结果
+
+下表计时单位为毫秒（ms）
+
+| 实验序号 | CPU 耗时   | GPU 耗时  |
+| -------- | ---------- | --------- |
+| 1        | 323.000000 | 92.157951 |
+| 2        | 321.000000 | 91.480003 |
+| 3        | 327.000000 | 86.834435 |
+
+三次运行耗时平均值分别为：CPU 323.67 毫秒，GPU 90.16 毫秒，相比之下，GPU 运行速度是 CPU 的 358% 倍。
+
 > 只是做了一些微小的工作。  
 > Just did some tiny work.
