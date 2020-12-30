@@ -18,7 +18,7 @@ __global__ void get_vector_squared(float* vector, float* vector_squared) {
 
 
 // 对坐标平方后的向量累加求和
-__global__ void get_vector_sqaured_sum_kernel(float *vector_squared, float *vector_squared_sum) {
+__global__ void get_vector_sqaured_sum_kernel(float *vector_squared, double *vector_squared_sum) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     
     for (unsigned int stride = gridDim.x * blockDim.x / 2; stride > 0; stride >>= 1) {
@@ -70,13 +70,12 @@ __global__ void get_min_value_of_row(float* array, float* min) {
 
 
 void get_max_min(float *vector, float *matrix, float min, float max) {
-    
-    long long int r_square_sum = 0;
+    double r_square_sum = 0;
     for (int i = 0; i < N; i++) {
         r_square_sum += vector[i] * vector[i];
     }
 
-    float r_mod = sqrtf(r_square_sum);
+    double r_mod = sqrtf(r_square_sum);
     for (int i = 0; i < N; i++) {
         for (int j = 0; j < N; j++) {
             matrix[i * N + j] = (vector[i] * vector[j]) / r_mod;
@@ -89,7 +88,7 @@ void get_max_min(float *vector, float *matrix, float min, float max) {
             }
         }
     }
-    printf("CPU => min = %.6f, max = %.6f\n", min, max);
+    printf("CPU => min = %.6f, max = %.6f\n\n", min, max);
 }
 
 
@@ -101,10 +100,10 @@ void init_Data(char* file_path, float* vector) {
     fclose(file);
 }
 
-int main()
-{
-    float* host_vector, * host_matrix, *host_min_array, * host_max_array;
-    float vector_squared_sum = 0, vector_mod = 0, host_min = 0, host_max = 0;
+int main() {
+    float *host_vector, *host_matrix, *host_min_array, *host_max_array;
+    float host_min = 0, host_max = 0;
+    double vector_mod = 0, vector_squared_sum = 0;
 
     host_vector = (float*)malloc(sizeof(float) * N);
     host_matrix = (float*)malloc(sizeof(float) * N * N);
@@ -116,24 +115,43 @@ int main()
     init_Data("./testdata6.txt", host_vector);
     
 
+    //========================= CPU start =========================
+    // 记录程序开始运行的时间
+    double startTime, endTime;
+    startTime = (double)clock();
+
     // CPU 函数
     get_max_min(host_vector, host_matrix, host_min, host_max);
 
+    // 输出程序运行花费的时间
+    endTime = (double)clock();
+    printf("Time elapsed on CPU: %.6f ms\n\n", endTime - startTime);
+    //========================= CPU end ===========================
+
+
+    //========================= GPU start =========================
+    // 记录程序开始运行的时间
+    float time;
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    cudaEventRecord(start, 0);
 
     // GPU 函数
     // 初始化变量
     float* device_vector, *device_vector_squared;
-    float* device_matrix, *device_vector_squared_sum;
+    float* device_matrix;
+    double *device_vector_squared_sum;
     float* device_min_array, * device_max_array;
 
     cudaMalloc((void**)&device_vector, sizeof(float) * N);
     cudaMalloc((void**)&device_vector_squared, sizeof(float) * N);
     cudaMalloc((void**)&device_matrix, sizeof(float) * N * N);
-    cudaMalloc((void**)&device_vector_squared_sum, sizeof(float));
+    cudaMalloc((void**)&device_vector_squared_sum, sizeof(double));
     cudaMalloc((void**)&device_min_array, sizeof(float) * N);
     cudaMalloc((void**)&device_max_array, sizeof(float) * N);
     cudaMemcpy(device_vector, host_vector, sizeof(float) * N, cudaMemcpyHostToDevice);
-    cudaMemcpy(device_vector_squared_sum, &vector_squared_sum, sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(device_vector_squared_sum, &vector_squared_sum, sizeof(double), cudaMemcpyHostToDevice);
 
     dim3 threadsPerBlock(1024);
     dim3 blocksPerGrid(8);
@@ -143,12 +161,12 @@ int main()
 
     get_vector_sqaured_sum_kernel <<< blocksPerGrid, threadsPerBlock >>> (device_vector_squared, device_vector_squared_sum);
     cudaDeviceSynchronize();
-    cudaMemcpy(&vector_squared_sum, device_vector_squared_sum, sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(&vector_squared_sum, device_vector_squared_sum, sizeof(double), cudaMemcpyDeviceToHost);
 
 
     // 求向量的模
     vector_mod = sqrtf(vector_squared_sum);
-    printf("Modulus of vector = %.2f\n", vector_mod);
+    //printf("Modulus of vector = %.6f\n", vector_mod);
 
 
     // 生成矩阵
@@ -183,7 +201,32 @@ int main()
     
 
     // 输出结果
-    printf("GPU => min = %.6f, max = %.6f\n", host_min, host_max);
+    printf("GPU => min = %.6f, max = %.6f\n\n", host_min, host_max);
+
+
+    cudaDeviceSynchronize();
+    cudaEventRecord(stop, 0);
+    cudaEventSynchronize(start);
+    cudaEventSynchronize(stop);
+    cudaEventElapsedTime(&time, start, stop);
+    printf("Time elapsed on GPU: %.6f ms\n", time);
+    cudaEventDestroy(start);
+    cudaEventDestroy(stop);
+
+    cudaFree(device_vector);
+    cudaFree(device_vector_squared);
+    cudaFree(device_matrix);
+    cudaFree(device_vector_squared_sum);
+    cudaFree(device_min_array);
+    cudaFree(device_max_array);
+    cudaFree(device_min);
+    cudaFree(device_max);
+    //========================= GPU end ===========================
+    
+    free(host_vector);
+    free(host_matrix);
+    free(host_min_array);
+    free(host_max_array);
 
     return 0;
 }
