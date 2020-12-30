@@ -49,11 +49,12 @@
 ## 代码实现
 
 [测试数据](https://github.com/sudrizzz/ParallelComputing/blob/main/experiment/02/testdata6.txt)
+
 [代码实现](https://github.com/sudrizzz/ParallelComputing/blob/main/experiment/02/max_min_value_of_matrix.cu)
 
 ## 实验结果
 
-下表计时单位为毫秒（ms）
+下表计时单位为毫秒（ms）。
 
 | 实验序号 | CPU 耗时   | GPU 耗时  |
 | -------- | ---------- | --------- |
