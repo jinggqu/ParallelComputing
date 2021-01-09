@@ -18,12 +18,12 @@ int main()
     int count = N * N;
     int roi1_u = 51;
     int roi1_v = 51;
-    //int roi2_u = 81;
-    //int roi2_v = 91;
+    int roi2_u = 81;
+    int roi2_v = 91;
     int roi1_wx = 900;
     int roi1_wy = 900;
-    //int roi2_wx = 800;
-    //int roi2_wy = 800;
+    int roi2_wx = 800;
+    int roi2_wy = 800;
 
     float* mat_f, * mat_g;
     mat_f = (float*)malloc(sizeof(float) * count);
@@ -37,22 +37,31 @@ int main()
 
     //========================= CPU start =========================
 
-    // 记录程序开始运行的时间
     double start_time, end_time;
     start_time = (double)clock();
 
     float ncc = standard_ncc(mat_f, mat_g, roi1_u, roi1_v, roi1_wx, roi1_wy);
-    printf("standard_ncc_on_CPU\t-> %.6f\n", ncc);
+    printf("standard_ncc_1_on_CPU\t-> %f\n", ncc);
     end_time = (double)clock();
-    printf("time elapsed on CPU\t-> %.6f ms\n\n", end_time - start_time);
+    printf("time elapsed on CPU\t-> %f ms\n\n", end_time - start_time);
+    start_time = end_time;
+
+    ncc = standard_ncc(mat_f, mat_g, roi2_u, roi2_v, roi2_wx, roi2_wy);
+    printf("standard_ncc_2_on_CPU\t-> %f\n", ncc);
+    end_time = (double)clock();
+    printf("time elapsed on CPU\t-> %f ms\n\n", end_time - start_time);
     start_time = end_time;
 
     ncc = sum_table_ncc(mat_f, mat_g, roi1_u, roi1_v, roi1_wx, roi1_wy);
-    printf("sum_table_ncc_on_CPU\t-> %.6f\n", ncc);
-
-    // 输出程序运行花费的时间
+    printf("sum_table_ncc_1_on_CPU\t-> %f\n", ncc);
     end_time = (double)clock();
-    printf("time elapsed on CPU\t-> %.6f ms\n\n", end_time - start_time);
+    printf("time elapsed on CPU\t-> %f ms\n\n", end_time - start_time);
+    start_time = end_time;
+
+    ncc = sum_table_ncc(mat_f, mat_g, roi2_u, roi2_v, roi2_wx, roi2_wy);
+    printf("sum_table_ncc_2_on_CPU\t-> %f\n", ncc);
+    end_time = (double)clock();
+    printf("time elapsed on CPU\t-> %f ms\n\n", end_time - start_time);
 
     //========================= CPU end ===========================
 
@@ -61,17 +70,13 @@ int main()
     // 通过标准方法并行计算 NCC
     // 记录程序开始运行的时间
     float time;
-    cudaEvent_t start, stop;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
-    cudaEventRecord(start, 0);
-
     dim3 threads_per_block(N);
     dim3 number_of_blocks(N);
 
-    float* device_mat_f, * device_mat_g;
+    float* device_mat_f, * device_mat_g, * device_mat_c;
     cudaMalloc((void**)&device_mat_f, sizeof(float) * count);
     cudaMalloc((void**)&device_mat_g, sizeof(float) * count);
+    cudaMalloc((void**)&device_mat_c, sizeof(float) * count);
     cudaMemcpy(device_mat_f, mat_f, sizeof(float) * count, cudaMemcpyHostToDevice);
     cudaMemcpy(device_mat_g, mat_g, sizeof(float) * count, cudaMemcpyHostToDevice);
 
@@ -84,27 +89,52 @@ int main()
     cudaMemcpy(device_f2_sum, &f2_sum, sizeof(float), cudaMemcpyHostToDevice);
     cudaMemcpy(device_g2_sum, &g2_sum, sizeof(float), cudaMemcpyHostToDevice);
 
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    cudaEventRecord(start, 0);
+
     get_mat_sum << < number_of_blocks, threads_per_block >> >
         (device_mat_f, device_mat_g, device_fg_sum, roi1_u, roi1_v, roi1_wx, roi1_wy);
     get_mat_sum << < number_of_blocks, threads_per_block >> >
         (device_mat_f, device_mat_f, device_f2_sum, roi1_u, roi1_v, roi1_wx, roi1_wy);
     get_mat_sum << < number_of_blocks, threads_per_block >> >
         (device_mat_g, device_mat_g, device_g2_sum, roi1_u, roi1_v, roi1_wx, roi1_wy);
-
     cudaDeviceSynchronize();
     cudaMemcpy(&fg_sum, device_fg_sum, sizeof(float), cudaMemcpyDeviceToHost);
     cudaMemcpy(&f2_sum, device_f2_sum, sizeof(float), cudaMemcpyDeviceToHost);
     cudaMemcpy(&g2_sum, device_g2_sum, sizeof(float), cudaMemcpyDeviceToHost);
 
     ncc = fg_sum / sqrtf(f2_sum * g2_sum);
-    printf("standard_ncc_on_GPU\t-> %.6f\n", ncc);
+    printf("standard_ncc_1_on_GPU\t-> %f\n", ncc);
 
-    cudaDeviceSynchronize();
+
     cudaEventRecord(stop, 0);
     cudaEventSynchronize(start);
     cudaEventSynchronize(stop);
     cudaEventElapsedTime(&time, start, stop);
-    printf("time elapsed on GPU\t-> %.6f ms\n", time);
+    printf("time elapsed on GPU\t-> %f ms\n\n", time);
+    cudaEventRecord(start, 0);
+
+    get_mat_sum << < number_of_blocks, threads_per_block >> >
+        (device_mat_f, device_mat_g, device_fg_sum, roi2_u, roi2_v, roi2_wx, roi2_wy);
+    get_mat_sum << < number_of_blocks, threads_per_block >> >
+        (device_mat_f, device_mat_f, device_f2_sum, roi2_u, roi2_v, roi2_wx, roi2_wy);
+    get_mat_sum << < number_of_blocks, threads_per_block >> >
+        (device_mat_g, device_mat_g, device_g2_sum, roi2_u, roi2_v, roi2_wx, roi2_wy);
+    cudaDeviceSynchronize();
+    cudaMemcpy(&fg_sum, device_fg_sum, sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(&f2_sum, device_f2_sum, sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(&g2_sum, device_g2_sum, sizeof(float), cudaMemcpyDeviceToHost);
+
+    ncc = fg_sum / sqrtf(f2_sum * g2_sum);
+    printf("standard_ncc_2_on_GPU\t-> %f\n", ncc);
+
+    cudaEventRecord(stop, 0);
+    cudaEventSynchronize(start);
+    cudaEventSynchronize(stop);
+    cudaEventElapsedTime(&time, start, stop);
+    printf("time elapsed on GPU\t-> %f ms\n\n", time);
     cudaEventDestroy(start);
     cudaEventDestroy(stop);
 
