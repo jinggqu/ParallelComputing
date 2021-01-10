@@ -25,7 +25,7 @@
 1. [CPU 实现](https://github.com/sudrizzz/ParallelComputing/blob/main/experiment/01/matrix_multiplication_host.c)
 2. [GPU 实现](https://github.com/sudrizzz/ParallelComputing/blob/main/experiment/01/matrix_multiplication_device.cu)
 
-## （二）完成矩阵相乘的并行程序的实现
+## （二）获取矩阵每一行的最大值
 
 完成一个尺寸 512\*512 的二维数组的每一行最大值的并行程序实现。矩阵的初始值全为本人学号的最后 1 位数字。数据类型设置为 float。需要完成 4 个版本。
 参考代码见 Lecture4\_性能优化-并行归约.ppt
